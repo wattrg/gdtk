@@ -132,34 +132,36 @@ class StefanMaxwell : MassDiffusion {
                     jy[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][1] + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_y;
                     jz[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][2] + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_z;
                 }
-            }
 
-            // finally, correct the mass fluxes so they add up to zero
-            number sum_x = 0.0;
-            number sum_y = 0.0;
-            number sum_z = 0.0;
-            foreach (isp; 0 .. _nsp) {
-                sum_x += jx[isp];
-                sum_y += jy[isp];
-                sum_z += jz[isp];
-            }
-            foreach (isp; 0 .. _nsp) {
-                jx[isp] = jx[isp] - fs.gas.massf[isp] * sum_x;
-                jy[isp] = jy[isp] - fs.gas.massf[isp] * sum_y;
-                jz[isp] = jz[isp] - fs.gas.massf[isp] * sum_z;
-            }
-            if (_ambipolar_diffusion) {
-                number nx = 0.0;
-                number ny = 0.0;
-                number nz = 0.0;
-                foreach (isp; _ion_idxs) {
-                    nx += jx[isp] / _mol_masses[isp];
-                    ny += jy[isp] / _mol_masses[isp];
-                    nz += jz[isp] / _mol_masses[isp];
+                // correct the mass fluxes so they add up to zero
+                number sum_x = 0.0;
+                number sum_y = 0.0;
+                number sum_z = 0.0;
+                foreach (isp; 0 .. _nsp) {
+                    sum_x += jx[isp];
+                    sum_y += jy[isp];
+                    sum_z += jz[isp];
                 }
-                jx[_electron_idx] = nx * _mol_masses[_electron_idx];
-                jy[_electron_idx] = ny * _mol_masses[_electron_idx];
-                jz[_electron_idx] = nz * _mol_masses[_electron_idx]; 
+                foreach (isp; 0 .. _nsp) {
+                    jx[isp] = jx[isp] - fs.gas.massf[isp] * sum_x;
+                    jy[isp] = jy[isp] - fs.gas.massf[isp] * sum_y;
+                    jz[isp] = jz[isp] - fs.gas.massf[isp] * sum_z;
+                }
+
+                // ensure ambipolar diffusion
+                if (_ambipolar_diffusion) {
+                    number nx = 0.0;
+                    number ny = 0.0;
+                    number nz = 0.0;
+                    foreach (isp; _ion_idxs) {
+                        nx += jx[isp] / _mol_masses[isp];
+                        ny += jy[isp] / _mol_masses[isp];
+                        nz += jz[isp] / _mol_masses[isp];
+                    }
+                    jx[_electron_idx] = nx * _mol_masses[_electron_idx];
+                    jy[_electron_idx] = ny * _mol_masses[_electron_idx];
+                    jz[_electron_idx] = nz * _mol_masses[_electron_idx]; 
+                }
             }
         }
     }
