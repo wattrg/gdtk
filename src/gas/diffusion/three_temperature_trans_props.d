@@ -227,6 +227,9 @@ public:
         // electronic contribution
         number k_ee = 0.0;
         foreach (isp; 0 .. mNSpecies) {
+            // Free electrons don't contribute to the electronic thermal
+            // conduction
+            if (isp == mElectronIdx) continue;
             denom = 0.0;
             foreach (jsp; 0 .. mNSpecies) {
                 denom += mMolef[jsp]*mDelta_11[isp][jsp];
@@ -257,9 +260,8 @@ public:
             k_E *= 2.3901e-8*(15./4.)*kB_erg;
             k_E *= (4.184/1.0e-2); // cal/(cm.s.K) --> J/(m.s.K)
         }
-        gs.k_modes[$-1] = 0.0;
         gs.k_modes[0] = k_vib;
-        gs.k_modes[$-1] += k_E;
+        gs.k_modes[1] = k_E;
         gs.k_modes[mElectronicMode] += k_ee;
     }
 
