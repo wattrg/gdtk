@@ -613,6 +613,10 @@ void ausmdv(in FlowState Lft, in FlowState Rght, in FlowState fs, ref ConservedQ
         }
         version(multi_T_gas) {
             foreach (i; 0 .. cqi.n_modes) { F[cqi.modes+i] += factor*ru_half*Lft.gas.u_modes[i]; }
+
+            if (gmodel.is_plasma && gmodel.n_modes > 0) {
+                F[cqi.modes+cqi.n_modes-1] += factor * ru_half * Lft.gas.p_e / Lft.gas.rho;
+            }
         }
         // NOTE: - the following relies on the free-electron mode being the last mode
         //       - for single temp models F_renergies isn't used
@@ -635,6 +639,10 @@ void ausmdv(in FlowState Lft, in FlowState Rght, in FlowState fs, ref ConservedQ
         }
         version(multi_T_gas) {
             foreach (i; 0 .. cqi.n_modes) { F[cqi.modes+i] += factor*ru_half*Rght.gas.u_modes[i]; }
+
+            if (gmodel.is_plasma && gmodel.n_modes > 0) {
+                F[cqi.modes+cqi.n_modes-1] += factor * ru_half * Rght.gas.p_e / Rght.gas.rho;
+            }
         }
     }
     //
