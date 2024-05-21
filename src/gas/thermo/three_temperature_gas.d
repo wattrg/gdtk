@@ -636,12 +636,12 @@ private:
     number electron_temperature(ref GasState gs)
     {
         if (gs.massf[mElectronIdx] < 1e-30) {return gs.T_modes[FREE_ELECTRON];}
-        number e_e = gs.u_modes[FREE_ELECTRON];
+        number e_e = gs.u_modes[FREE_ELECTRON] / gs.massf[mElectronIdx];
         number Re = mR[mElectronIdx];
-        number Xe = gs.massf[mElectronIdx];
         number Hf = mHf[mElectronIdx];
         // return e_e / (3.0 / 2.0 * gs.massf[mElectronIdx] * mR[mElectronIdx]) + T_REF;
-        return 2 * e_e / (3 * Re * Xe) - 2 * (Hf - Re * T_REF) / (3 * Re) + T_REF;
+        // return 2 * e_e / (3 * Re * Xe) - 2 * (Hf - Re * T_REF) / (3 * Re) + T_REF;
+        return (e_e + 5 / 2  * Re * T_REF - Hf) / (3/2 * Re);
     }
 
     @nogc
