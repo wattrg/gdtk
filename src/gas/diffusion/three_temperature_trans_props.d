@@ -262,7 +262,7 @@ public:
         }
         gs.k_modes[0] = k_vib;
         gs.k_modes[1] = k_E;
-        gs.k_modes[mElectronicMode] += k_ee;
+        // gs.k_modes[mElectronicMode] += k_ee;
     }
 
     @nogc void binaryDiffusionCoefficients(ref const(GasState) gs, ref number[][] D)

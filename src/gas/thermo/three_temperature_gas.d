@@ -275,7 +275,7 @@ public:
         number h_e = electron_energy_species(gs.T_modes[FREE_ELECTRON], isp);
         number h_electronic = electronic_energy_species(gs.T_modes[mElectronicMode], isp);
         if (isp == mElectronIdx) {
-            h_e += (gs.T_modes[FREE_ELECTRON] - T_REF) * mR[mElectronIdx];
+            h_e += gs.T_modes[FREE_ELECTRON] * mR[mElectronIdx];
         }
         if (mElectronicMode == 0) {h_v += h_electronic;}
         else {h_e += h_electronic;}
@@ -299,7 +299,7 @@ public:
                     h_e += electronic_energy_species(gs.T_modes[FREE_ELECTRON], isp);
                 }
                 if (isp == mElectronIdx) {
-                    h_e += (gs.T_modes[FREE_ELECTRON] - T_REF) * mR[mElectronIdx] + mHf[mElectronIdx];
+                    h_e += gs.T_modes[FREE_ELECTRON] * mR[mElectronIdx];
                 }
                 return h_e;
             default:
@@ -530,7 +530,8 @@ private:
     number electron_energy_species(number Te, int isp)
     {
         if (isp == mElectronIdx) {
-            return (3.0/2.0)*(Te-T_REF)*mR[mElectronIdx] + mHf[mElectronIdx]-mR[mElectronIdx]*T_REF;
+            // return (3.0/2.0)*(Te-T_REF)*mR[mElectronIdx] + mHf[mElectronIdx]-mR[mElectronIdx]*T_REF;
+            return (5.0/2.0)*(Te-T_REF)*mR[mElectronIdx] + mHf[mElectronIdx] - mR[mElectronIdx]*Te;
         }
         return to!number(0.0);
     }
