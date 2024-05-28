@@ -65,7 +65,7 @@ MassDiffusion initMassDiffusion(GasModel gmodel,
         return new FicksFirstLaw(gmodel, diffusion_coefficient_type, true,
                                  Lewis);
     case MassDiffusionModel.stefan_maxwell:
-        return new StefanMaxwell(gmodel);
+        return new StefanMaxwell(gmodel, diffusion_coefficient_type);
     default:
         throw new FlowSolverException("Selected mass diffusion model is not available.");
     }
@@ -76,7 +76,11 @@ MassDiffusion initMassDiffusion(GasModel gmodel,
 // Author: Robert Watt
 // Date: 30/4/2024
 class StefanMaxwell : MassDiffusion {
-    this(GasModel gmodel){
+    this(GasModel gmodel, string diffusion_coefficient_type){
+        if (diffusion_coefficient_type != "binary_diffusion"){
+            throw new FlowSolverException("stefan_maxwell diffusion requires binary_diffusion coefficients");
+        }
+
         _gmodel = gmodel;
         _nsp = gmodel.n_species;
         _D_avg.length = _nsp;
@@ -84,7 +88,12 @@ class StefanMaxwell : MassDiffusion {
         _mol_masses.length = _nsp;
         _D.length = _nsp;
         foreach (isp; 0 .. _nsp) _D[isp].length = _nsp;
-        _binary_diffusion = new BinaryDiffusion(_nsp, gmodel.is_plasma, gmodel.charge);
+
+        // even though the gas may be a plasma, we handle ambipolar diffusion
+        // as a constraint on the system of equations here, not by modifying 
+        // the average diffusion coefficients. So we pretend the gas is not
+        // a plasma for the purposes of computing diffusion coefficients.
+        _binary_diffusion = new BinaryDiffusion(_nsp, false, gmodel.charge);
 
         if (gmodel.is_plasma()){
             _ambipolar_diffusion = true;
