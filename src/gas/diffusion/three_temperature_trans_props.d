@@ -250,7 +250,7 @@ public:
 
         // 4. k_e
         number k_E = 0.0;
-        if (mElectronIdx != -1) {
+        if (mElectronIdx != -1 && mMolef[mElectronIdx] > SMALL_MOLE_FRACTION) {
             // electron present.
             denom = 0.0;
             foreach (jsp; 0 .. mNSpecies) {
