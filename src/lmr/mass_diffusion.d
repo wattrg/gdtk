@@ -114,19 +114,39 @@ class StefanMaxwell : MassDiffusion {
             _gmodel.binary_diffusion_coefficients(fs.gas, _D);
             _mol_masses = _gmodel.mol_masses();
             number M = _gmodel.molecular_mass(fs.gas);
-            // number S = (fs.S > 0.5) ? 0.5 * to!number(sin(2 * PI * fs.S - PI / 2)) + 0.5 : to!number(1.0);
-            number S = 1 / PI * atan(fs.gas.T - 300) + 0.5;
+
+            foreach (isp; _ion_idxs) {
+                foreach (jsp; _ion_idxs) {
+                    _D[isp][jsp] *= 1 + fs.gas.T_modes[$-1] / fs.gas.T;
+                    _D[jsp][isp] *= 1 + fs.gas.T_modes[$-1] / fs.gas.T;
+                }
+            }
+            foreach (isp; 0 .. _nsp) {
+                number sum = 0.0;
+                foreach (jsp; 0 .. _nsp) {
+                    if (isp == jsp) continue;
+                    if (_D[isp][jsp] < SMALL_DIFFUSION_COEFFICIENT) continue;
+                    if (_molef[jsp] < SMALL_MOLE_FRACTION) continue;
+                    sum += _molef[jsp] / _D[isp][jsp];
+                }
+                if (sum <= 0.0) {
+                    _D_avg[isp] = 0.0;
+                }
+                else {
+                    _D_avg[isp] = (1.0 - _molef[isp]) / sum;
+                }
+            }
 
             // Initial guess using the average diffusion coefficient
             foreach(isp; 0 .. _nsp){
-                jx[isp] = -S * fs.gas.rho * _D_avg[isp] * grad.massf[isp][0];
-                jy[isp] = -S * fs.gas.rho * _D_avg[isp] * grad.massf[isp][1];
-                jz[isp] = -S * fs.gas.rho * _D_avg[isp] * grad.massf[isp][2];
+                jx[isp] = -fs.gas.rho * _D_avg[isp] * grad.massf[isp][0];
+                jy[isp] = -fs.gas.rho * _D_avg[isp] * grad.massf[isp][1];
+                jz[isp] = -fs.gas.rho * _D_avg[isp] * grad.massf[isp][2];
             }
 
 
             // Iterate to solve the Stefan-Maxwell equations
-            foreach (n_iter; 0 .. 10){
+            foreach (n_iter; 0 .. 40){
                 foreach (isp; 0 .. _nsp){
                     number sum_x = 0;
                     number sum_y = 0;
@@ -134,13 +154,13 @@ class StefanMaxwell : MassDiffusion {
                     foreach (jsp; 0 .. _nsp){
                         if (isp == jsp) continue;
                         number M_ratio = M / _mol_masses[jsp];
-                        sum_x += S * fs.gas.rho * M_ratio * grad.massf[jsp][0] + M_ratio * jx[jsp] / _D[isp][jsp];
-                        sum_y += S * fs.gas.rho * M_ratio * grad.massf[jsp][1] + M_ratio * jy[jsp] / _D[isp][jsp];
-                        sum_z += S * fs.gas.rho * M_ratio * grad.massf[jsp][2] + M_ratio * jz[jsp] / _D[isp][jsp];
+                        sum_x += fs.gas.rho * M_ratio * grad.massf[jsp][0] + M_ratio * jx[jsp] / _D[isp][jsp];
+                        sum_y += fs.gas.rho * M_ratio * grad.massf[jsp][1] + M_ratio * jy[jsp] / _D[isp][jsp];
+                        sum_z += fs.gas.rho * M_ratio * grad.massf[jsp][2] + M_ratio * jz[jsp] / _D[isp][jsp];
                     }
-                    jx[isp] = -S * fs.gas.rho*_D_avg[isp]*grad.massf[isp][0] + S * fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_x;
-                    jy[isp] = -S * fs.gas.rho*_D_avg[isp]*grad.massf[isp][1] + S * fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_y;
-                    jz[isp] = -S * fs.gas.rho*_D_avg[isp]*grad.massf[isp][2] + S * fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_z;
+                    jx[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][0] + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_x;
+                    jy[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][1] + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_y;
+                    jz[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][2] + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_z;
                 }
 
                 // correct the mass fluxes so they add up to zero
@@ -153,9 +173,9 @@ class StefanMaxwell : MassDiffusion {
                     sum_z += jz[isp];
                 }
                 foreach (isp; 0 .. _nsp) {
-                    jx[isp] = jx[isp] - S * fs.gas.massf[isp] * sum_x;
-                    jy[isp] = jy[isp] - S * fs.gas.massf[isp] * sum_y;
-                    jz[isp] = jz[isp] - S * fs.gas.massf[isp] * sum_z;
+                    jx[isp] = jx[isp] -fs.gas.massf[isp] * sum_x;
+                    jy[isp] = jy[isp] -fs.gas.massf[isp] * sum_y;
+                    jz[isp] = jz[isp] -fs.gas.massf[isp] * sum_z;
                 }
 
                 // ensure ambipolar diffusion
@@ -168,9 +188,9 @@ class StefanMaxwell : MassDiffusion {
                         ny += jy[isp] / _mol_masses[isp];
                         nz += jz[isp] / _mol_masses[isp];
                     }
-                    jx[_electron_idx] = S * nx * _mol_masses[_electron_idx];
-                    jy[_electron_idx] = S * ny * _mol_masses[_electron_idx];
-                    jz[_electron_idx] = S * nz * _mol_masses[_electron_idx]; 
+                    jx[_electron_idx] = nx * _mol_masses[_electron_idx];
+                    jy[_electron_idx] = ny * _mol_masses[_electron_idx];
+                    jz[_electron_idx] = nz * _mol_masses[_electron_idx]; 
                 }
             }
         }
