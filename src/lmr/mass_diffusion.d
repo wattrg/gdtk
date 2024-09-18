@@ -126,7 +126,7 @@ class StefanMaxwell : MassDiffusion {
                 foreach (jsp; 0 .. _nsp) {
                     if (isp == jsp) continue;
                     if (_D[isp][jsp] < SMALL_DIFFUSION_COEFFICIENT) continue;
-                    if (_molef[jsp] < SMALL_MOLE_FRACTION) continue;
+                    if (_molef[jsp] < 0.0) continue;
                     sum += _molef[jsp] / _D[isp][jsp];
                 }
                 if (sum <= 0.0) {
@@ -146,7 +146,7 @@ class StefanMaxwell : MassDiffusion {
 
 
             // Iterate to solve the Stefan-Maxwell equations
-            foreach (n_iter; 0 .. 40){
+            foreach (n_iter; 0 .. 10){
                 foreach (isp; 0 .. _nsp){
                     number sum_x = 0;
                     number sum_y = 0;
