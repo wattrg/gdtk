@@ -676,7 +676,13 @@ void ausmdv(in FlowState Lft, in FlowState Rght, in FlowState fs, ref ConservedQ
             }
             version(multi_T_gas) {
                 foreach (i; 0 .. cqi.n_modes) {
-                    F[cqi.modes+i] -= factor*d_ua*(rR*Rght.gas.u_modes[i] - rL*Lft.gas.u_modes[i]);
+                    number hli = to!number(0.0);
+                    number hri = to!number(0.0);
+                    foreach (isp; 0 .. gmodel.n_species) {
+                        hli += Lft.gas.massf[isp]*gmodel.enthalpyPerSpeciesInMode(Lft.gas, isp, cast(int) i);
+                        hri += Rght.gas.massf[isp]*gmodel.enthalpyPerSpeciesInMode(Rght.gas, isp, cast(int) i);
+                    }
+                    F[cqi.modes+i] -= factor*d_ua*(rR*hri - rL*hli);
                 }
             }
         } // end of entropy fix (d_ua != 0)
@@ -945,6 +951,10 @@ void ldfss0(in FlowState Lft, in FlowState Rght, in FlowState fs, ref ConservedQ
         foreach (i; 0 .. cqi.n_modes) {
             F[cqi.modes+i] +=  factor*(aL*rL*CL*Lft.gas.u_modes[i] + aR*rR*CR*Rght.gas.u_modes[i]);
         }
+
+        if (gmodel.is_plasma && gmodel.n_modes > 0) {
+            F[cqi.modes+cqi.n_modes-1] += factor*(aL*CL*Lft.gas.p_e + aR*CR*Rght.gas.p_e);
+        }
     }
 } // end ldfss0()
 
@@ -1055,6 +1065,10 @@ void ldfss2(in FlowState Lft, in FlowState Rght, in FlowState fs, ref ConservedQ
         foreach (i; 0 .. cqi.n_modes) {
             F[cqi.modes+i] +=  factor*(am*rL*CL*Lft.gas.u_modes[i] + am*rR*CR*Rght.gas.u_modes[i]);
         }
+
+        if (gmodel.is_plasma && gmodel.n_modes > 0) {
+            F[cqi.modes+cqi.n_modes-1] += factor*(am*CL*Lft.gas.p_e + am*CR*Rght.gas.p_e);
+        }
     }
 } // end ldfss2()
 
@@ -1156,6 +1170,10 @@ void hanel(in FlowState Lft, in FlowState Rght, in FlowState fs, ref ConservedQu
     version(multi_T_gas) {
         foreach (i; 0 .. cqi.n_modes) {
             F[cqi.modes+i] += factor*(uLplus*rL*Lft.gas.u_modes[i] + uRminus*rR*Rght.gas.u_modes[i]);
+        }
+
+        if (gmodel.is_plasma && gmodel.n_modes > 0) {
+            F[cqi.modes+cqi.n_modes-1] += factor*(uLplus*Lft.gas.p_e + uRminus*Rght.gas.p_e);
         }
     }
 } // end hanel()
