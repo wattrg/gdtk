@@ -125,8 +125,8 @@ class StefanMaxwell : MassDiffusion {
                 number sum = 0.0;
                 foreach (jsp; 0 .. _nsp) {
                     if (isp == jsp) continue;
-                    if (_D[isp][jsp] < SMALL_DIFFUSION_COEFFICIENT) continue;
-                    if (_molef[jsp] < 0.0) continue;
+                    // if (_D[isp][jsp] < SMALL_DIFFUSION_COEFFICIENT) continue;
+                    // if (_molef[jsp] < 0.0) continue;
                     sum += _molef[jsp] / _D[isp][jsp];
                 }
                 if (sum <= 0.0) {
@@ -158,9 +158,12 @@ class StefanMaxwell : MassDiffusion {
                         sum_y += fs.gas.rho * M_ratio * grad.massf[jsp][1] + M_ratio * jy[jsp] / _D[isp][jsp];
                         sum_z += fs.gas.rho * M_ratio * grad.massf[jsp][2] + M_ratio * jz[jsp] / _D[isp][jsp];
                     }
-                    jx[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][0] + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_x;
-                    jy[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][1] + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_y;
-                    jz[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][2] + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_z;
+                    jx[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][0] 
+                        + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_x;
+                    jy[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][1]
+                        + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_y;
+                    jz[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][2]
+                        + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_z;
                 }
 
                 // correct the mass fluxes so they add up to zero
