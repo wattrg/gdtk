@@ -105,11 +105,48 @@ class StefanMaxwell : MassDiffusion {
     }
 
     @nogc
+    void compute_electron_mass_flux(number[] jx, number[] jy, number[] jz)
+    {
+        if (_ambipolar_diffusion) {
+            number nx = 0.0;
+            number ny = 0.0;
+            number nz = 0.0;
+            foreach (isp; _ion_idxs) {
+                nx += jx[isp] / _mol_masses[isp];
+                ny += jy[isp] / _mol_masses[isp];
+                nz += jz[isp] / _mol_masses[isp];
+            }
+            jx[_electron_idx] = nx * _mol_masses[_electron_idx];
+            jy[_electron_idx] = ny * _mol_masses[_electron_idx];
+            jz[_electron_idx] = nz * _mol_masses[_electron_idx]; 
+        }
+    }
+
+    @nogc
+    void correct_mass_fluxes(ref FlowState fs, number[] jx, number[] jy, number[] jz)
+    {
+        // correct the mass fluxes so they add up to zero
+        number sum_x = 0.0;
+        number sum_y = 0.0;
+        number sum_z = 0.0;
+        foreach (isp; 0 .. _nsp) {
+            sum_x += jx[isp];
+            sum_y += jy[isp];
+            sum_z += jz[isp];
+        }
+        foreach (isp; 0 .. _nsp) {
+            jx[isp] = jx[isp] -fs.gas.massf[isp] * sum_x;
+            jy[isp] = jy[isp] -fs.gas.massf[isp] * sum_y;
+            jz[isp] = jz[isp] -fs.gas.massf[isp] * sum_z;
+        }
+    }
+
+    @nogc
     void update_mass_fluxes(ref FlowState fs, ref const(FlowGradients) grad,
                             number[] jx, number[] jy, number[] jz)
     {
         version(multi_species_gas){
-            _binary_diffusion.computeAvgDiffCoeffs(fs.gas, _gmodel, _D_avg);
+            // _binary_diffusion.computeAvgDiffCoeffs(fs.gas, _gmodel, _D_avg);
             _gmodel.massf2molef(fs.gas, _molef);
             _gmodel.binary_diffusion_coefficients(fs.gas, _D);
             _mol_masses = _gmodel.mol_masses();
@@ -117,8 +154,8 @@ class StefanMaxwell : MassDiffusion {
 
             foreach (isp; _ion_idxs) {
                 foreach (jsp; _ion_idxs) {
-                    _D[isp][jsp] *= 1 + fs.gas.T_modes[$-1] / fs.gas.T;
-                    _D[jsp][isp] *= 1 + fs.gas.T_modes[$-1] / fs.gas.T;
+                    _D[isp][jsp] *= (1 + fs.gas.T_modes[$-1] / fs.gas.T);
+                    _D[jsp][isp] *= (1 + fs.gas.T_modes[$-1] / fs.gas.T);
                 }
             }
             foreach (isp; 0 .. _nsp) {
@@ -144,9 +181,11 @@ class StefanMaxwell : MassDiffusion {
                 jz[isp] = -fs.gas.rho * _D_avg[isp] * grad.massf[isp][2];
             }
 
+            correct_mass_fluxes(fs, jx, jy, jz);
+            compute_electron_mass_flux(jx, jy, jz);
 
             // Iterate to solve the Stefan-Maxwell equations
-            foreach (n_iter; 0 .. 10){
+            foreach (n_iter; 0 .. 20){
                 foreach (isp; 0 .. _nsp){
                     number sum_x = 0;
                     number sum_y = 0;
@@ -166,35 +205,8 @@ class StefanMaxwell : MassDiffusion {
                         + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_z;
                 }
 
-                // correct the mass fluxes so they add up to zero
-                number sum_x = 0.0;
-                number sum_y = 0.0;
-                number sum_z = 0.0;
-                foreach (isp; 0 .. _nsp) {
-                    sum_x += jx[isp];
-                    sum_y += jy[isp];
-                    sum_z += jz[isp];
-                }
-                foreach (isp; 0 .. _nsp) {
-                    jx[isp] = jx[isp] -fs.gas.massf[isp] * sum_x;
-                    jy[isp] = jy[isp] -fs.gas.massf[isp] * sum_y;
-                    jz[isp] = jz[isp] -fs.gas.massf[isp] * sum_z;
-                }
-
-                // ensure ambipolar diffusion
-                if (_ambipolar_diffusion) {
-                    number nx = 0.0;
-                    number ny = 0.0;
-                    number nz = 0.0;
-                    foreach (isp; _ion_idxs) {
-                        nx += jx[isp] / _mol_masses[isp];
-                        ny += jy[isp] / _mol_masses[isp];
-                        nz += jz[isp] / _mol_masses[isp];
-                    }
-                    jx[_electron_idx] = nx * _mol_masses[_electron_idx];
-                    jy[_electron_idx] = ny * _mol_masses[_electron_idx];
-                    jz[_electron_idx] = nz * _mol_masses[_electron_idx]; 
-                }
+                correct_mass_fluxes(fs, jx, jy, jz);
+                compute_electron_mass_flux(jx, jy, jz);
             }
         }
     }
