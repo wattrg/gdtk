@@ -1739,7 +1739,6 @@ public:
 
         // Viscous flux update
         if (myConfig.viscous) {
-
             foreach(f; iface_list) {
                 if (f.is_on_boundary) { applyPreSpatialDerivActionAtBndryFaces(0.0, gtl, ftl, f); }
             }

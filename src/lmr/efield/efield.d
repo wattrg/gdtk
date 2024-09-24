@@ -47,7 +47,7 @@ class ElectricField {
         A.length = N*nbands;
         Ai.length = N*nbands;
         b.length = N;
-        max_iter = N; // eventually you need to do something about this.
+        max_iter = 4000; // eventually you need to do something about this.
         phi.length = N;
         phi0.length = N;
         auto gmodel = GlobalConfig.gmodel_master;
@@ -294,6 +294,7 @@ class ElectricField {
                     int k = cell.id + block_offsets[blkid];
                     //writefln(" A[i,:]=[%e,%e,%e,%e,%e] b=[%e]", A[k*nbands+0], A[k*nbands+1], A[k*nbands+2], A[k*nbands+3], A[k*nbands+4], b[k]);
                     double Akk = A[k*nbands + 2];
+                    if (fabs(Akk) < 1e-15) continue;
                     b[k] /= Akk;
                     foreach(iio; 0 .. nbands) A[k*nbands + iio] /= Akk;
                 }

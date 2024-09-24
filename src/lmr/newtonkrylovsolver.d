@@ -42,6 +42,7 @@ import lmr.blockio;
 import lmr.conservedquantities : ConservedQuantities, copy_values_from;
 import lmr.fileutil : ensure_directory_is_present;
 import lmr.fluidblock : FluidBlock;
+import lmr.efield.efield;
 import lmr.fvcell : FVCell;
 import lmr.fvcellio;
 import lmr.globalconfig;
@@ -677,6 +678,10 @@ void initNewtonKrylovSimulation(int snapshotStart, int maxCPUs, int threadsPerMP
     version(mpi_parallel) { MPI_Barrier(MPI_COMM_WORLD); }
 
     // [TODO] Add in electric field solver initialisation.
+    if (GlobalConfig.solve_electric_field){
+        if (GlobalConfig.is_master_task) writeln("Initialising Electric Field Solver...");
+        eField = new ElectricField(localFluidBlocks, GlobalConfig.field_conductivity_model);
+    }
 
     // Do some memory clean-up and reporting.
     GC.collect();
@@ -2309,6 +2314,14 @@ void computePreconditioner()
 {
     size_t nConserved = GlobalConfig.cqi.n;
 
+    if (GlobalConfig.solve_electric_field && ((SimState.step+1)%GlobalConfig.electric_field_count==0)){
+        eField.solve_efield(localFluidBlocks, false);
+        eField.compute_electric_field_vector(localFluidBlocks);
+        foreach (blk; parallel(localFluidBlocks, 1)) {
+            foreach (face; blk.faces) {face.average_electric_field();}
+        }
+    }
+
     final switch (nkCfg.preconditioner) {
     case PreconditionerType.diagonal:
         goto case PreconditionerType.sgs;
@@ -3168,6 +3181,13 @@ void evalResidual(int ftl)
         // ghost cells along block-block boundaries have the most
         // recent mu_t and k_t values.
         exchange_ghost_cell_turbulent_viscosity();
+        if (GlobalConfig.solve_electric_field) {
+            eField.solve_efield(localFluidBlocks, false);
+            eField.compute_electric_field_vector(localFluidBlocks);
+            foreach (blk; parallel(localFluidBlocks, 1)) {
+                foreach (face; blk.faces) {face.average_electric_field();}
+            }
+        }
         foreach (blk; parallel(localFluidBlocks,1)) {
             blk.average_turbulent_transprops_to_faces();
             blk.viscous_flux();
