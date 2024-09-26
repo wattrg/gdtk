@@ -296,9 +296,9 @@ class DriftDiffusion : MassDiffusion {
             sum_z += jz[isp];
         }
         foreach (isp; 0 .. _nsp) {
-            jx[isp] = jx[isp] -fs.gas.massf[isp] * sum_x;
-            jy[isp] = jy[isp] -fs.gas.massf[isp] * sum_y;
-            jz[isp] = jz[isp] -fs.gas.massf[isp] * sum_z;
+            jx[isp] = jx[isp] - fs.gas.massf[isp] * sum_x;
+            jy[isp] = jy[isp] - fs.gas.massf[isp] * sum_y;
+            jz[isp] = jz[isp] - fs.gas.massf[isp] * sum_z;
         }
     }
 
@@ -367,10 +367,10 @@ class DriftDiffusion : MassDiffusion {
                         sum_z += fs.gas.rho * M_ratio * grad.massf[jsp][2] + M_ratio * jz[jsp] / _D[isp][jsp];
                     }
                     jx[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][0] 
-                        + fs.gas.massf[isp] * fs.gas.rho * fs.electric_field[0] * _mobility[isp]
+                        + fmax(0.0, fs.gas.massf[isp]) * fs.gas.rho * fs.electric_field[0] * _mobility[isp]
                         + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_x;
                     jy[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][1]
-                        + fs.gas.massf[isp] * fs.gas.rho * fs.electric_field[1] * _mobility[isp]
+                        + fmax(0.0, fs.gas.massf[isp]) * fs.gas.rho * fs.electric_field[1] * _mobility[isp]
                         + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_y;
                     jz[isp] = -fs.gas.rho*_D_avg[isp]*grad.massf[isp][2]
                         + fs.gas.massf[isp] / (1 - _molef[isp]) * _D_avg[isp] * sum_z;

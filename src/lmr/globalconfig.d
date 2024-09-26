@@ -1471,7 +1471,12 @@ public:
     double divB_damping_length;
     int electric_field_count;
     bool solve_electric_field;
+<<<<<<< HEAD
     string conductivity_model_name;
+=======
+    int electric_field_gmres_iters;
+    string field_conductivity_model;
+>>>>>>> 008517ae (Clean up the electric field implementation a bit)
     //
     bool viscous;
     bool use_viscosity_from_cells;
@@ -1658,7 +1663,12 @@ public:
         divB_damping_length = cfg.divB_damping_length;
         electric_field_count = cfg.electric_field_count;
         solve_electric_field = cfg.solve_electric_field;
+<<<<<<< HEAD
         conductivity_model_name = cfg.conductivity_model_name;
+=======
+        field_conductivity_model = cfg.field_conductivity_model;
+        electric_field_gmres_iters = cfg.electric_field_gmres_iters;
+>>>>>>> 008517ae (Clean up the electric field implementation a bit)
         //
         viscous = cfg.viscous;
         use_viscosity_from_cells = cfg.use_viscosity_from_cells;
@@ -2015,7 +2025,12 @@ void set_config_for_core(JSONValue jsonData)
     mixin(update_double("divB_damping_length", "divB_damping_length"));
     mixin(update_int("electric_field_count", "electric_field_count"));
     mixin(update_bool("solve_electric_field", "solve_electric_field"));
+<<<<<<< HEAD
     mixin(update_string("conductivity_model_name", "conductivity_model_name"));
+=======
+    mixin(update_string("field_conductivity_model", "field_conductivity_model"));
+    mixin(update_int("electric_field_gmres_iters", "electric_field_gmres_iters"));
+>>>>>>> 008517ae (Clean up the electric field implementation a bit)
 
     // Checking of constraints.
     // The following checks/overrides must happen after the relevant config elements
@@ -2104,7 +2119,12 @@ void set_config_for_core(JSONValue jsonData)
         writeln("  divB_damping_length: ", cfg.divB_damping_length);
         writeln("  electric_field_count: ", cfg.electric_field_count);
         writeln("  solve_electric_field: ", cfg.solve_electric_field);
+<<<<<<< HEAD
         writeln("  conductivity_model_name: ", cfg.conductivity_model_name);
+=======
+        writeln("  field_conductivity_model: ", cfg.field_conductivity_model);
+        writeln("  electric_field_gmres_iters: ", cfg.electric_field_gmres_iters);
+>>>>>>> 008517ae (Clean up the electric field implementation a bit)
     }
     configCheckPoint2();
     //

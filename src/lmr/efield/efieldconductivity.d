@@ -17,7 +17,6 @@ import gas.gas_state;
 import gas.physical_constants;
 import geom;
 import nm.number;
-
 import lmr.mass_diffusion;
 
 interface ConductivityModel{
@@ -51,6 +50,7 @@ class RaizerConductivity : ConductivityModel{
     this() {}
     @nogc final number opCall(ref const(GasState) gs, const Vector3 pos, GasModel gm){
         version(multi_T_gas) {
+<<<<<<< HEAD
             double Tref;
             if (gm.n_modes == 0) {
                 Tref = gs.T.re;
@@ -58,6 +58,9 @@ class RaizerConductivity : ConductivityModel{
                 size_t iTe = gm.n_modes-1;
                 Tref = gs.T_modes[iTe].re;
             }
+=======
+            double Tref = gs.T_modes[$-1].re; // Hmmm. This will crash in single temp
+>>>>>>> 008517ae (Clean up the electric field implementation a bit)
         } else {
             double Tref = gs.T.re;
         }
@@ -86,6 +89,7 @@ class DiffusionConductivity : ConductivityModel{
         Davg.length = nsp;
         // We lie to BinaryDiffusion that our is_plasma is false to prevent it from enforcing ambipolar diffusion
         bd = new BinaryDiffusion(nsp, false, gm.charge);
+        electron_idx = gm.species_index("e-");
     }
 
     @nogc final number opCall(ref const(GasState) gs, const Vector3 pos, GasModel gm){
@@ -99,8 +103,9 @@ class DiffusionConductivity : ConductivityModel{
         number sigma = 0.0;
         foreach(i; 0 .. nsp){
             double Z = gm.charge[i];
-            number n = number_density[i];
-            number T = gs.T; // TODO: Consider using the electron temperature for i==[e-]
+            number n = fmax(to!number(0.0), number_density[i]);
+            number T = (i == electron_idx) ? gs.T_modes[$-1] : gs.T;
+            // number T = gs.T; // TODO: Consider using the electron temperature for i==[e-]
             number D = Davg[i];
             sigma +=  Z*Z*D*n*elementary_charge*elementary_charge/Boltzmann_constant/T;
         }
@@ -112,6 +117,7 @@ private:
     number[] number_density;
     number[] Davg;
     BinaryDiffusion bd;
+    int electron_idx;
 }
 
 ConductivityModel create_conductivity_model(string name, GasModel gm){

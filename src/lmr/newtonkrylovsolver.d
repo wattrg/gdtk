@@ -2314,7 +2314,7 @@ void computePreconditioner()
 {
     size_t nConserved = GlobalConfig.cqi.n;
 
-    if (GlobalConfig.solve_electric_field && ((SimState.step+1)%GlobalConfig.electric_field_count==0)){
+    if (GlobalConfig.solve_electric_field){
         eField.solve_efield(localFluidBlocks, false);
         eField.compute_electric_field_vector(localFluidBlocks);
         foreach (blk; parallel(localFluidBlocks, 1)) {
