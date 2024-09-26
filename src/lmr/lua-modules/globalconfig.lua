@@ -35,6 +35,7 @@ configOptionsHidden = { -- hidden from user
    divB_damping_length = 1.0,
    electric_field_count = 1000000000,
    solve_electric_field = false,
+   electric_field_gmres_iters = -1,
    field_conductivity_model="none",
    --
    strang_splitting = "full_T_full_R",

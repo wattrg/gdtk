@@ -181,6 +181,7 @@ function output.write_config_file(fileName)
    f:write(string.format('"divB_damping_length": %.18e,\n', config.divB_damping_length))
    f:write(string.format('"electric_field_count": %d,\n', config.electric_field_count))
    f:write(string.format('"solve_electric_field": %s,\n', tostring(config.solve_electric_field)))
+   f:write(string.format('"electric_field_gmres_iters": %s,\n', tostring(config.electric_field_gmres_iters)))
    f:write(string.format('"field_conductivity_model": "%s",\n', tostring(config.field_conductivity_model)))
    f:write(string.format('"apply_bcs_in_parallel": %s,\n',
 			 tostring(config.apply_bcs_in_parallel)))
