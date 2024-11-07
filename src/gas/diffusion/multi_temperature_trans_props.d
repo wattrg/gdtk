@@ -67,7 +67,9 @@ public:
 
         // figure out which mode each species contributes thermal conductivity to
         mVibModes.length = speciesNames.length;
+        mElectronicModes.length = speciesNames.length;
         mVibModes[] = -1;
+        mElectronicModes[] = -1;
         lua_getglobal(L, "db");
         lua_getfield(L, -1, "modes");
         foreach (i_mode, mode_name; energyModeNames){
@@ -85,8 +87,7 @@ public:
                         mVibModes[to!int(isp)] = to!int(i_mode);
                         break;
                     case "electronic":
-                        // we will need to include the electronic
-                        // contribution at some point
+                        mElectronicModes[to!int(isp)] = to!int(i_mode);
                         break;
                     case "electron":
                         // we don't need to do anything, this is
@@ -262,6 +263,22 @@ public:
             int vib_mode = mVibModes[isp];
             gs.k_modes[vib_mode] += fmax((fmin(Cp.re, 9.0/2.0) - 7.0/2.0), 0.0) * mMolef[isp]/denom;
         }
+        // electronic contribution
+        foreach (isp; 0 .. mNSpecies) {
+            // Free electrons don't contribute to the electronic thermal
+            // conduction
+            if (isp == mElectronIdx) continue;
+            int electronic_mode = mElectronicModes[isp];
+            if (electron_mode < 0) continue;
+
+            denom = 0.0;
+            foreach (jsp; 0 .. mNSpecies) {
+                denom += mMolef[jsp]*mDelta_11[isp][jsp];
+            }
+            number Cp = mMolMasses[isp]/R_universal*gm.Cp(gs, isp);
+            gs.k_modes[electronic_mode] += fmax((Cp.re - 9.0/2.0), 0.0) * mMolef[isp]/denom;
+        }
+
         k_rot *= 2.3901e-8*kB_erg;
         k_rot *= (4.184/1.0e-2); // cal/(cm.s.K) --> J/(m.s.K)
         foreach (ref k_vib; gs.k_modes) {
@@ -324,6 +341,7 @@ private:
     int mElectronIdx = -1;
     int[] mMolecularSpecies;
     int[] mVibModes;
+    int[] mElectronicModes;
     double[] mMolMasses;
     double[] mParticleMass;
     int[] mCharge;
