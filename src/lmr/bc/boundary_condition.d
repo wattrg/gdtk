@@ -36,6 +36,7 @@ import bc.boundary_interface_effect;
 import bc.boundary_cell_effect;
 import bc.boundary_flux_effect;
 import bc.user_defined_effects;
+import bc.boundary_vertex_full_face_copy;
 import lua_helper;
 import grid_motion;
 import grid_motion_udf;
@@ -138,6 +139,10 @@ public:
     // We're going to store the JSONdata for the field boundaries, rather then the boundary objects themselves
     // TODO: In the future, rethink if this is a good idea. (NNG)
     JSONValue field_bc;
+
+    // for steady-state shock-fitting, we need to exchange vertex information
+    BoundaryVertexFullFaceCopy vertex_exchange;    
+
 private:
     // Working storage for boundary flux derivatives
     FlowState* _Lft, _Rght;
