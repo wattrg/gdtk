@@ -1647,7 +1647,7 @@ void solveNewtonStep(bool updatePreconditionerThisStep)
 
         // scale the r0 vector
         foreach (blk; parallel(localFluidBlocks,1)) {
-            scaleVector(rowScale, blk.r0, nConserved);
+            scaleVector(rowScale, blk.r0, nConserved, blk.nvars);
         }
 
         // beta = ||r0||
@@ -1696,7 +1696,7 @@ void solveNewtonStep(bool updatePreconditionerThisStep)
 
         // We first multiply zed by the column scaling to recover zed *= Dc = P * dU
         foreach (blk; parallel(localFluidBlocks,1)) {
-            scaleVector(colScale, blk.zed, nConserved);
+            scaleVector(colScale, blk.zed, nConserved, blk.nvars);
         }
 
         // Next we remove preconditioner effect to finally recover dU
@@ -2026,9 +2026,10 @@ void computePreconditioner()
  * Date: 2023-03-13
  */
 
-void scaleVector(ConservedQuantities scale, ref double[] vec, size_t nConserved)
+void scaleVector(ConservedQuantities scale, ref double[] vec, size_t nConserved, size_t nvars)
 {
     foreach (k, ref v; vec) {
+        if (k >= nvars) { break; }
         size_t ivar = k % nConserved;
         v *= scale[ivar].re;
     }
@@ -2131,7 +2132,7 @@ bool performIterations(int maxIterations, double targetResidual,
 
         // 1. apply column scaling to v
         foreach (blk; parallel(localFluidBlocks,1)) {
-            scaleVector(colScale, blk.v, nConserved);
+            scaleVector(colScale, blk.v, nConserved, blk.nvars);
         }
 
         /*
@@ -2163,7 +2164,7 @@ bool performIterations(int maxIterations, double targetResidual,
 
         // apply row scaling to w
         foreach (blk; parallel(localFluidBlocks,1)) {
-            scaleVector(rowScale, blk.w, nConserved);
+            scaleVector(rowScale, blk.w, nConserved, blk.nvars);
         }
 
         /*
