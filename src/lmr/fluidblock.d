@@ -209,11 +209,9 @@ public:
     abstract void write_underlying_grid(string fileName);
     @nogc abstract void propagate_inflow_data_west_to_east();
     @nogc abstract void set_face_flowstates_to_averages_from_cells();
-    @nogc abstract void convective_flux_phase0_legacy(
-                                               bool allow_high_order_interpolation, size_t gtl=0,
+    @nogc abstract void convective_flux_phase0(bool allow_high_order_interpolation, size_t gtl=0,
                                                FluidFVCell[] cell_list = [], FVInterface[] iface_list = [],
                                                FVVertex[] vertex_list = []);
-    @nogc abstract void convective_flux_phase0(bool allow_high_order_interpolation, size_t gtl=0);
     @nogc abstract void convective_flux_phase1(bool allow_high_order_interpolation, size_t gtl=0,
                                                FluidFVCell[] cell_list = [], FVInterface[] iface_list = [],
                                                FVVertex[] vertex_list = []);
@@ -1712,7 +1710,7 @@ public:
         bool do_reconstruction = ( flowJacobian.spatial_order > 1 );
 
         // convective flux update
-        convective_flux_phase0_legacy(do_reconstruction, gtl, cell_list, iface_list);
+        convective_flux_phase0(do_reconstruction, gtl, cell_list, iface_list);
         convective_flux_phase1(do_reconstruction, gtl, cell_list, iface_list);
         convective_flux_phase2(do_reconstruction, gtl, cell_list, iface_list);
 
@@ -1897,7 +1895,7 @@ public:
         c.clear_source_vector();
         //
         FluidFVCell[1] cell_list = [c];
-        convective_flux_phase0_legacy(do_reconstruction, gtl, cell_list, c.iface);
+        convective_flux_phase0(do_reconstruction, gtl, cell_list, c.iface);
         convective_flux_phase1(do_reconstruction, gtl, cell_list, c.iface);
         convective_flux_phase2(do_reconstruction, gtl, cell_list, c.iface);
 

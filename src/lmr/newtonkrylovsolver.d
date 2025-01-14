@@ -649,7 +649,6 @@ void initNewtonKrylovSimulation(int snapshotStart, int maxCPUs, int threadsPerMP
     initMappedCellDataExchange();
     initGhostCellGeometry();
     initLeastSquaresStencils();
-    initStructuredStencilData();
 
     if ((cfg.interpolation_order > 1) &&
 	((cfg.unstructured_limiter == UnstructuredLimiter.hvenkat_mlp) ||

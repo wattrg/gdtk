@@ -424,11 +424,6 @@ public:
             debug { msg ~= format("Unhandled number of vertices: %d", vtx.length); }
             throw new FlowSolverException(msg);
         } // end switch
-        fvcd.lengths[id][0] = iL;
-        fvcd.lengths[id][1] = jL;
-        fvcd.lengths[id][2] = 0.0;
-        fvcd.positions[id] = pos[gtl];
-
         // Cell Volume.
         if (axisymmetric) {
             // Volume per radian = centroid y-ordinate * cell area
@@ -447,8 +442,6 @@ public:
             }
             throw new FlowSolverException(msg);
         }
-        fvcd.volumes[id] = vol;
-        fvcd.areas[id] = xyplane_area;
         volume[gtl] = vol;
         areaxy[gtl] = xyplane_area;
         kLength = to!number(0.0);
@@ -489,11 +482,6 @@ public:
             debug { msg ~= format("Unhandled number of vertices: %d", vtx.length); }
             throw new FlowSolverException(msg);
         } // end switch
-        fvcd.volumes[id] = volume[gtl];
-        fvcd.positions[id] = pos[gtl];
-        fvcd.lengths[id][0] = iL;
-        fvcd.lengths[id][1] = jL;
-        fvcd.lengths[id][2] = kL;
         if (volume[gtl] <= 0.0) {
             debug {
                 msg ~= format("Invalid volume %g for cell %d in block %d at pos %s",
