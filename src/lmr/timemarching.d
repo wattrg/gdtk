@@ -40,6 +40,7 @@ import lmr.init;
 import lmr.lmrconfig;
 import lmr.lmrexceptions;
 import lmr.simcore_solid_step : determine_solid_time_step_size, solid_step;
+import lmr.efield.efield : ElectricField;
 import lmr.loads : 
     computeRunTimeLoads,
     count_written_loads,
@@ -264,7 +265,7 @@ void initTimeMarchingSimulation(int snapshotStart, int maxCPUs, int threadsPerMP
     // Configure Nick's electric field solver.
     if (GlobalConfig.solve_electric_field){
         if (GlobalConfig.is_master_task) writeln("Initialising Electric Field Solver...");
-        eField = new ElectricField(localFluidBlocks, GlobalConfig.field_conductivity_model);
+        eField = new ElectricField(localFluidBlocks, GlobalConfig.conductivity_model_name);
     }
 
     // Keep our memory foot-print small.

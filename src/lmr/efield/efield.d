@@ -47,12 +47,7 @@ class ElectricField {
         A.length = N*nbands;
         Ai.length = N*nbands;
         b.length = N;
-        if (GlobalConfig.electric_field_gmres_iters <= 0) {
-            max_iter = N;
-        }
-        else {
-            max_iter = GlobalConfig.electric_field_gmres_iters;
-        }
+        max_iter = N;
         phi.length = N;
         phi0.length = N;
         auto gmodel = GlobalConfig.gmodel_master;

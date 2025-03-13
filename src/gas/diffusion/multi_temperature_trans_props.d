@@ -269,7 +269,7 @@ public:
             // conduction
             if (isp == mElectronIdx) continue;
             int electronic_mode = mElectronicModes[isp];
-            if (electron_mode < 0) continue;
+            if (electronic_mode < 0) continue;
 
             denom = 0.0;
             foreach (jsp; 0 .. mNSpecies) {

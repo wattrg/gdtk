@@ -42,7 +42,7 @@ import lmr.blockio;
 import lmr.conservedquantities : ConservedQuantities, copy_values_from;
 import lmr.fileutil : ensure_directory_is_present;
 import lmr.fluidblock : FluidBlock;
-import lmr.efield.efield;
+import lmr.efield.efield : ElectricField;
 import lmr.fvcell : FVCell;
 import lmr.fvcellio;
 import lmr.globalconfig;
@@ -680,7 +680,7 @@ void initNewtonKrylovSimulation(int snapshotStart, int maxCPUs, int threadsPerMP
     // [TODO] Add in electric field solver initialisation.
     if (GlobalConfig.solve_electric_field){
         if (GlobalConfig.is_master_task) writeln("Initialising Electric Field Solver...");
-        eField = new ElectricField(localFluidBlocks, GlobalConfig.field_conductivity_model);
+        eField = new ElectricField(localFluidBlocks, GlobalConfig.conductivity_model_name);
     }
 
     // Do some memory clean-up and reporting.
