@@ -988,14 +988,13 @@ public:
             foreach (j; 0 .. njc) {
                 foreach (i; 0 .. nic) {
                     size_t c = cell_index(i,j,k);
-                    // These need to be consistent with cell.iface order
-                    celldata.c2f[c] ~= ifi_index(i,j,k);  // west
+                    celldata.c2f[c] ~= ifj_index(i,j+1,k);// north
                     celldata.c2f[c] ~= ifi_index(i+1,j,k);// east
                     celldata.c2f[c] ~= ifj_index(i,j,k);  // south
-                    celldata.c2f[c] ~= ifj_index(i,j+1,k);// north
+                    celldata.c2f[c] ~= ifi_index(i,j,k);  // west
                     if (myConfig.dimensions == 3) {
-                        celldata.c2f[c] ~= ifk_index(i,j,k);   // bottom
                         celldata.c2f[c] ~= ifk_index(i,j,k+1); // top
+                        celldata.c2f[c] ~= ifk_index(i,j,k);   // bottom
                     }
                     celldata.nfaces[c] = celldata.c2f[c].length;
                 }
@@ -1006,13 +1005,13 @@ public:
             foreach (j; 0 .. njc) {
                 foreach (i; 0 .. nic) {
                     size_t c = cell_index(i,j,k);
-                    celldata.outsigns[c] ~= -1; // west
-                    celldata.outsigns[c] ~=  1; // east
-                    celldata.outsigns[c] ~= -1; // south
-                    celldata.outsigns[c] ~=  1; // north
+                    celldata.outsigns[c] ~= 1;// north
+                    celldata.outsigns[c] ~= 1;// east
+                    celldata.outsigns[c] ~= -1;  // south
+                    celldata.outsigns[c] ~= -1;  // west
                     if (myConfig.dimensions == 3) {
-                        celldata.outsigns[c] ~= -1; // bottom
-                        celldata.outsigns[c] ~=  1; // top
+                        celldata.outsigns[c] ~= 1; // top
+                        celldata.outsigns[c] ~= -1;   // bottom
                     }
                 }
             }
