@@ -87,6 +87,10 @@ string[] buildFluidVariables()
         variables ~= "B.y";
         variables ~= "B.z";
     }
+    if (cfg.solve_electric_field) {
+        variables ~= "E.x";
+        variables ~= "E.y";
+    }
     variables ~= "p";
     variables ~= "a";
     if (cfg.viscous) {
@@ -240,6 +244,8 @@ public:
     	case "B.x": return fcell.fs.B.x.re;
         case "B.y": return fcell.fs.B.y.re;
     	case "B.z": return fcell.fs.B.z.re;
+    	case "E.x": return fcell.electric_field[0];
+    	case "E.y": return fcell.electric_field[1];
     	case "p": return fcell.fs.gas.p.re;
     	case "a": return fcell.fs.gas.a.re;
         case "mu": return fcell.fs.gas.mu.re;
@@ -297,6 +303,8 @@ public:
         case "B.x": fcell.fs.B.x.re = value; return fcell.fs.B.x.re;
         case "B.y": fcell.fs.B.y.re = value; return fcell.fs.B.y.re;
         case "B.z": fcell.fs.B.z.re = value; return fcell.fs.B.z.re;
+        case "E.x": fcell.electric_field[0] = value; return fcell.electric_field[0];
+        case "E.y": fcell.electric_field[1] = value; return fcell.electric_field[1];
         case "p": fcell.fs.gas.p.re = value; return fcell.fs.gas.p.re;
         case "a": fcell.fs.gas.a.re = value; return fcell.fs.gas.a.re;
         case "mu": fcell.fs.gas.mu.re = value; return fcell.fs.gas.mu.re;

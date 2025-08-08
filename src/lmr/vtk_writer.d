@@ -76,6 +76,9 @@ File begin_PVTU_file(string fileName, string[] variableNames)
     if (canFind(variableNames,"B.x")) {
         f.write(" <PDataArray Name=\"B.vector\" type=\"Float32\" NumberOfComponents=\"3\"/>\n");
     }
+    if (canFind(variableNames,"E.x")) {
+        f.write(" <PDataArray Name=\"E.vector\" type=\"Float32\" NumberOfComponents=\"3\"/>\n");
+    }
     f.write("</PCellData>\n");
     return f;
 } // end begin_PVTU_file()
@@ -333,6 +336,34 @@ void write_VTU_file(FluidBlockLite flow, Grid grid, string fileName, bool binary
             binary_data_offset += 4 + binary_data.length;
         }
     } // if canFind B.x
+    if (canFind(flow.variableNames, "E.x")) {
+        fp.write(" <DataArray Name=\"E.vector\" type=\"Float32\" NumberOfComponents=\"3\"");
+        if (binary_format) {
+            fp.writef(" format=\"appended\" offset=\"%d\">", binary_data_offset);
+            binary_data.length = 0;
+        } else {
+            fp.write(" format=\"ascii\">\n");
+        }
+        foreach (i; 0 .. flow.ncells) {
+            float x = uflowz(flow["E.x",i]);
+            float y = uflowz(flow["E.y",i]);
+            float z = uflowz(0.0);
+            if (binary_format) {
+                binary_data ~= nativeToBigEndian(x);
+                binary_data ~= nativeToBigEndian(y);
+                binary_data ~= nativeToBigEndian(z);
+            } else {
+                fp.writef(" %.18e %.18e %.18e\n", x, y, z);
+            }
+        } // end foreach i
+        fp.write(" </DataArray>\n");
+        if (binary_format) {
+            uint32_t binary_data_count = to!uint32_t(binary_data.length); // 4-byte count of bytes
+            binary_data_string ~= nativeToBigEndian(binary_data_count);
+            binary_data_string ~= binary_data;
+            binary_data_offset += 4 + binary_data.length;
+        }
+    } // if canFind E.x
     //
     fp.write("</CellData>\n");
     fp.write("</Piece>\n");
