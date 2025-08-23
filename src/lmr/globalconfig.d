@@ -2357,7 +2357,11 @@ void set_config_for_core(JSONValue jsonData)
     */
     // Parameters controlling size of storage arrays - we set this here since we key it off some of the other config parameters
     if (cfg.solverMode == SolverMode.steady) {
-        cfg.n_flow_time_levels = 2;
+        if (cfg.residual_smoothing) {
+            cfg.n_flow_time_levels = 3;
+        } else {
+            cfg.n_flow_time_levels = 2;
+        }
     } else {
         cfg.n_flow_time_levels = 1 + number_of_stages_for_update_scheme(cfg.gasdynamic_update_scheme);
     }

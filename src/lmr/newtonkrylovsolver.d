@@ -45,6 +45,7 @@ import lmr.conservedquantities : ConservedQuantities, copy_values_from;
 import lmr.fileutil : ensure_directory_is_present;
 import lmr.fluidblock : FluidBlock;
 import lmr.fvcell : FVCell;
+import lmr.fluidfvcell : FluidFVCell;
 import lmr.fvcellio;
 import lmr.globalconfig;
 import lmr.globaldata;
@@ -639,13 +640,12 @@ void initNewtonKrylovSimulation(int snapshotStart, int maxCPUs, int threadsPerMP
     if (cfg.nFluidBlocks == 0 && cfg.is_master_task) {
         throw new NewtonKrylovException("No FluidBlocks; no point in continuing with simulation initialisation.");
     }
-    cfg.n_flow_time_levels = 2;
+    cfg.n_flow_time_levels = (cfg.residual_smoothing) ? 3 : 2;
 
     // if we have grid motion, we need two grid time levels
     if (cfg.grid_motion != GridMotion.none) {
         cfg.n_grid_time_levels = 2;
     }
-
 
     initLocalBlocks();
 
@@ -2482,42 +2482,140 @@ void scaleVector(ScaleFactors scale, ref double[] vec, size_t nConserved,
  */
 void evalResidualSmoothing()
 {
-    // Compute an approximate solution: dU = D^{-1} * R(U),
-    // where D is some approximation of the Jacobian, here we use the
-    // same approximation as the precondition matrix out of convenience
-    size_t nConserved = GlobalConfig.cqi.n;
-    final switch (nkCfg.preconditioner) {
-    case PreconditionerType.diagonal:
-        foreach (blk; parallel(localFluidBlocks,1)) { blk.DinvR[] = 0.0; }
-        mixin(diagonal_solve("DinvR", "R"));
-        break;
-    case PreconditionerType.jacobi:
-        foreach (blk; parallel(localFluidBlocks,1)) { blk.DinvR[] = 0.0; }
-        mixin(jacobi_solve("DinvR", "R"));
-        break;
-    case PreconditionerType.sgs:
-        foreach (blk; parallel(localFluidBlocks,1)) { blk.DinvR[] = 0.0; }
-        mixin(sgs_solve("DinvR", "R"));
-        break;
-    case PreconditionerType.ilu:
-        foreach (blk; parallel(localFluidBlocks,1)) {
-            blk.DinvR[] = blk.R[];
-            nm.smla.solve(blk.flowJacobian.local, blk.DinvR);
+    // Compute an approximate solution: dU = D^{-1}(R(U)),
+    // where D is some approximation of the Jacobian
+    // We are going to begin by using point-implicit update
+    evalPointImplicitResidualSmoothing(2);
+    
+}
+
+void evalPointImplicitResidualSmoothing(int n_iters)
+{
+    // save the initial flow state
+    foreach (blk; parallel(localFluidBlocks, 1)) {
+        // writeln("PT 1");
+        if (blk.myConfig.viscous) {
+            foreach(cell; blk.cells) {cell.grad_save.copy_values_from(*(cell.grad));}
         }
-        break;
-    } // end switch
+        // writeln("PT 2");
+        // if (activePhase.residualInterpolationOrder >= 2) {
+        //     foreach (cell; blk.cells) {cell.gradients_save.copy_values_from(*(cell.gradients));}
+        // }
+        // writeln("PT 3");
+        if (blk.myConfig.reacting) {
+            foreach (cell; blk.cells) {
+                cell.clear_source_vector();
+                cell.add_thermochemical_source_vector(blk.thermochem_source, 1.0);
+                cell.Q_save.copy_values_from(cell.Q);
+            }
+        }
+    }
+
+    // copy the current state to the residual smoothing
+    // work area at ftl 2
+    foreach (blk; parallel(localFluidBlocks, 1)) {
+        foreach (cell; blk.cells) {
+            cell.U[2].copy_values_from(cell.U[0]);
+        }
+    }
+
+    foreach (n_iter; 0 .. n_iters) {
+        foreach (blk; parallel(localFluidBlocks, 1)) {
+            foreach (cell; blk.cells) {
+                evalCellJacobian(blk, cell);
+            }
+      
+            pointImplicitUpdate(blk);
+        }
+    }
+}
+
+void pointImplicitUpdate(FluidBlock blk)
+{
+    size_t nConserved = GlobalConfig.cqi.n;
+    if (!blk.crhs || blk.crhs.nrows != nConserved || blk.crhs.ncols != (nConserved+1)) {
+        blk.crhs = new Matrix!double(nConserved, nConserved + 1);
+    }
+
+    foreach (cell; blk.cells) {
+        foreach (j; 0 .. nConserved) {
+            foreach (i; 0 .. nConserved) {
+                version(complex_numbers) {
+                    blk.crhs[i, j] = -cell.dRdU[i][j];
+                }
+            }
+            blk.crhs[j, j] += 1.0 / cell.dt_local;
+            blk.crhs[j, nConserved] = cell.dUdt[0][j].re;
+        }
+        gaussJordanElimination!double(blk.crhs);
+        foreach (j; 0 .. nConserved) {
+            cell.U[2][j] += blk.crhs[j, nConserved];
+        }
+    }
+}
+
+void evalCellJacobian(FluidBlock blk, FluidFVCell cell)
+{
+    size_t nConserved = GlobalConfig.cqi.n;
+    int ftl = 1;
+    int gtl = 0;
+            
+    cell.U[ftl].copy_values_from(cell.U[2]);
+    blk.fs_save.copy_values_from(cell.fs);
+
+    // perturb each conserved quantity in the cell, compute the local
+    // residual, and form the local jacobian matrix
+    foreach (j; 0 .. nConserved) {
+        version(complex_numbers) {
+            double sigma = nkCfg.frechetDerivativePerturbation;
+            cell.U[ftl][j] += complex!double(0.0, sigma);
+            cell.decode_conserved(gtl, ftl, blk.omegaz);
+            blk.evalRHS(gtl, ftl, cell.cell_list, cell.face_list, cell);
+            foreach (i; 0 .. nConserved) {
+                cell.dRdU[i][j] = cell.dUdt[ftl][i].im / sigma;
+            }
+
+            // restore the cell to its original state
+            cell.U[ftl].copy_values_from(cell.U[2]);
+            cell.fs.copy_values_from(*blk.fs_save);
+            
+            if (blk.myConfig.viscous) {
+                foreach (cell_i; cell.cell_list) {
+                    cell.grad.copy_values_from(*(cell_i.grad_save));
+                }
+            }
+            if (activePhase.residualInterpolationOrder >= 2) {
+                foreach(cell_i; cell.cell_list) {
+                    cell.gradients.copy_values_from(*(cell_i.gradients_save));
+                }
+            }
+        } else {
+            throw new Exception("Point Implicit residual smoothing not implemented for real values");
+        }
+    }
 }
 
 void applyResidualSmoothing()
 {
     // Add the smoothing source term to the Residual vector
+ //    size_t nConserved = GlobalConfig.cqi.n;
+ //    foreach (blk; parallel(localFluidBlocks,1)) {
+	// size_t startIdx = 0;
+	// foreach (cell; blk.cells) {
+	//     blk.R[startIdx .. startIdx+nConserved] += (1.0/cell.dt_local) * blk.DinvR[startIdx .. startIdx+nConserved];
+	//     startIdx += nConserved;
+	// }
+ //    }
+
     size_t nConserved = GlobalConfig.cqi.n;
-    foreach (blk; parallel(localFluidBlocks,1)) {
-	size_t startIdx = 0;
-	foreach (cell; blk.cells) {
-	    blk.R[startIdx .. startIdx+nConserved] += (1.0/cell.dt_local) * blk.DinvR[startIdx .. startIdx+nConserved];
-	    startIdx += nConserved;
-	}
+    foreach (blk; parallel(localFluidBlocks, 1)) {
+        size_t idx = 0;
+        foreach (cell; blk.cells) {
+            foreach (i; 0 .. nConserved) {
+                blk.R[idx] -= (1.0 / cell.dt_local) * (cell.U[2][i].re - cell.U[0][i].re);
+                idx++;
+            }
+        }
     }
 }
 

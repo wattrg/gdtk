@@ -39,6 +39,7 @@ import lmr.block;
 import lmr.conservedquantities;
 import lmr.coredata;
 import lmr.flowgradients;
+import lmr.lsqinterp;
 import lmr.flowstate;
 import lmr.fluidfvcell;
 import lmr.fvinterface;
@@ -293,6 +294,16 @@ public:
             celldata.cell_jacobians.length = (ncells+nghost)*neq*neq;
             celldata.saved_gradients.reserve(ncells + nghost);
             foreach (n; 0 .. ncells+nghost) celldata.saved_gradients ~= FlowGradients(myConfig);
+
+            if (myConfig.interpolation_order >= 2) {
+                celldata.saved_lsqgradients.reserve(ncells + nghost);
+                foreach (n; 0 .. ncells+nghost) {
+                     celldata.saved_lsqgradients ~= LSQInterpGradients(myConfig.gmodel.n_species,
+                                                                       myConfig.gmodel.n_modes,
+                                                                       myConfig.turb_model.nturb);
+                }                    
+            }
+
             celldata.saved_source_terms.length = (ncells + nghost)*neq;
             celldata.doNotPerturb.length = (ncells+nghost);
         }
