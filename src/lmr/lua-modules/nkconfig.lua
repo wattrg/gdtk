@@ -212,6 +212,9 @@ NewtonKrylovPhaseDefaults = {
    grid_motion_enabled = false,
    shock_fitting_allow_interpolation = true,
    shock_fitting_scale_factor = 0.5,
+
+   -- residual smoothing
+   residual_smoothing_iters = 2,
 }
 
 local NewtonKrylovPhases = {}
@@ -283,6 +286,7 @@ function NewtonKrylovPhase:tojson()
    str = str .. string.format('    "grid_motion_enabled": %s,\n', tostring(self.grid_motion_enabled))
    str = str .. string.format('    "shock_fitting_allow_interpolation": %s,\n', tostring(self.shock_fitting_allow_interpolation))
    str = str .. string.format('    "shock_fitting_scale_factor": %s,\n', tostring(self.shock_fitting_scale_factor))
+   str = str .. string.format('    "rseidual_smoothing_iters": %s,\n', tostring(self.residual_smoothing_iters))
    str = str .. '    "dummy_entry_without_trailing_comma": 0\n' -- no comma on last entry
    str = str .. '}'
    return str

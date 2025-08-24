@@ -300,6 +300,7 @@ struct NKPhaseConfig {
     bool gridMotionEnabled = false;
     int shockFittingAllowInterpolation = true;
     double shockFittingScaleFactor = 0.5;
+    int residualSmoothingIters = 2;
 
     void readValuesFromJSON(JSONValue jsonData)
     {
@@ -329,6 +330,7 @@ struct NKPhaseConfig {
         gridMotionEnabled = getJSONbool(jsonData, "grid_motion_enabled", gridMotionEnabled);
         shockFittingAllowInterpolation = getJSONbool(jsonData, "shock_fitting_allow_interpolation", true);
         shockFittingScaleFactor = getJSONdouble(jsonData, "shock_fitting_scale_factor", shockFittingScaleFactor);
+        residualSmoothingIters = getJSONint(jsonData, "residual_smoothing_iters", residualSmoothingIters);
     }
 }
 
@@ -2485,7 +2487,7 @@ void evalResidualSmoothing()
     // Compute an approximate solution: dU = D^{-1}(R(U)),
     // where D is some approximation of the Jacobian
     // We are going to begin by using point-implicit update
-    evalPointImplicitResidualSmoothing(2);
+    evalPointImplicitResidualSmoothing(activePhase.residualSmoothingIters);
     
 }
 
@@ -2541,11 +2543,13 @@ void pointImplicitUpdate(FluidBlock blk)
         foreach (j; 0 .. nConserved) {
             foreach (i; 0 .. nConserved) {
                 version(complex_numbers) {
-                    blk.crhs[i, j] = -cell.dRdU[i][j];
+                    blk.crhs[i, j] = cell.dRdU[i][j];
                 }
             }
-            blk.crhs[j, j] += 1.0 / cell.dt_local;
-            blk.crhs[j, nConserved] = cell.dUdt[0][j].re;
+        }
+        foreach (j; 0 .. nConserved) {
+            // blk.crhs[j, j] += 1.0 / cell.dt_local;
+            blk.crhs[j, nConserved] = cell.dUdt[2][j].re;
         }
         gaussJordanElimination!double(blk.crhs);
         foreach (j; 0 .. nConserved) {
