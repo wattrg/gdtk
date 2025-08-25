@@ -2526,7 +2526,6 @@ void evalPointImplicitResidualSmoothing(int n_iters)
             foreach (cell; blk.cells) {
                 evalCellJacobian(blk, cell);
             }
-      
             pointImplicitUpdate(blk);
         }
     }
@@ -2535,25 +2534,29 @@ void evalPointImplicitResidualSmoothing(int n_iters)
 void pointImplicitUpdate(FluidBlock blk)
 {
     size_t nConserved = GlobalConfig.cqi.n;
-    if (!blk.crhs || blk.crhs.nrows != nConserved || blk.crhs.ncols != (nConserved+1)) {
-        blk.crhs = new Matrix!double(nConserved, nConserved + 1);
-    }
+    // if (!blk.crhs || blk.crhs.nrows != nConserved || blk.crhs.ncols != (nConserved)) {
+    //     blk.crhs = new Matrix!double(nConserved, nConserved);
+    // }
+    Matrix!double jac = new Matrix!double(nConserved, nConserved+1);
+    // Matrix!double rhs = new Matrix!double(nConserved, 1);
+
+    
 
     foreach (cell; blk.cells) {
         foreach (j; 0 .. nConserved) {
             foreach (i; 0 .. nConserved) {
                 version(complex_numbers) {
-                    blk.crhs[i, j] = cell.dRdU[i][j];
+                    jac[i, j] = -cell.dRdU[i][j];
                 }
             }
         }
         foreach (j; 0 .. nConserved) {
-            // blk.crhs[j, j] += 1.0 / cell.dt_local;
-            blk.crhs[j, nConserved] = cell.dUdt[2][j].re;
+            jac[j, j] += 1 / cell.dt_local;
+            jac[j, nConserved] = cell.dUdt[1][j].re;
         }
-        gaussJordanElimination!double(blk.crhs);
+        gaussJordanElimination!double(jac);
         foreach (j; 0 .. nConserved) {
-            cell.U[2][j] += blk.crhs[j, nConserved];
+            cell.U[2][j] += jac[j, nConserved];
         }
     }
 }
@@ -2602,21 +2605,12 @@ void evalCellJacobian(FluidBlock blk, FluidFVCell cell)
 void applyResidualSmoothing()
 {
     // Add the smoothing source term to the Residual vector
- //    size_t nConserved = GlobalConfig.cqi.n;
- //    foreach (blk; parallel(localFluidBlocks,1)) {
-	// size_t startIdx = 0;
-	// foreach (cell; blk.cells) {
-	//     blk.R[startIdx .. startIdx+nConserved] += (1.0/cell.dt_local) * blk.DinvR[startIdx .. startIdx+nConserved];
-	//     startIdx += nConserved;
-	// }
- //    }
-
     size_t nConserved = GlobalConfig.cqi.n;
     foreach (blk; parallel(localFluidBlocks, 1)) {
         size_t idx = 0;
         foreach (cell; blk.cells) {
             foreach (i; 0 .. nConserved) {
-                blk.R[idx] -= (1.0 / cell.dt_local) * (cell.U[2][i].re - cell.U[0][i].re);
+                blk.R[idx] += (1.0 / cell.dt_local) * (cell.U[2][i].re - cell.U[0][i].re);
                 idx++;
             }
         }
