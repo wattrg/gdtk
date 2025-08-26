@@ -2591,11 +2591,6 @@ void evalCellJacobian(FluidBlock blk, FluidFVCell cell)
                     cell.grad.copy_values_from(*(cell_i.grad_save));
                 }
             }
-            if (activePhase.residualInterpolationOrder >= 2) {
-                foreach(cell_i; cell.cell_list) {
-                    cell.gradients.copy_values_from(*(cell_i.gradients_save));
-                }
-            }
         } else {
             throw new Exception("Point Implicit residual smoothing not implemented for real values");
         }
