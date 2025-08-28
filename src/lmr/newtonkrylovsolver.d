@@ -169,7 +169,7 @@ struct NKGlobalConfig {
     double minRelaxationFactorForUpdate = 0.01;
     double minRelaxationFactorForCFLGrowth = 0.1;
     double relaxationFactorReductionFactor = 0.7;
-    bool useResidualSmoothing = false;
+    // bool useResidualSmoothing = false;
     // Linear solver and preconditioning
     int maxLinearSolverIterations = 10;
     int maxLinearSolverRestarts = 0;
@@ -228,7 +228,7 @@ struct NKGlobalConfig {
         minRelaxationFactorForUpdate = getJSONdouble(jsonData, "min_relaxation_factor_for_update", minRelaxationFactorForUpdate);
         minRelaxationFactorForCFLGrowth = getJSONdouble(jsonData, "min_relaxation_factor_for_cfl_growth", minRelaxationFactorForCFLGrowth);
         relaxationFactorReductionFactor = getJSONdouble(jsonData, "relaxation_factor_reduction_factor", relaxationFactorReductionFactor);
-        useResidualSmoothing = getJSONbool(jsonData, "use_residual_smoothing", useResidualSmoothing);
+        // useResidualSmoothing = getJSONbool(jsonData, "use_residual_smoothing", useResidualSmoothing);
         maxLinearSolverIterations = getJSONint(jsonData, "max_linear_solver_iterations", maxLinearSolverIterations);
         maxLinearSolverRestarts = getJSONint(jsonData, "max_linear_solver_restarts", maxLinearSolverRestarts);
         useScaling = getJSONbool(jsonData, "use_scaling", useScaling);
@@ -1797,7 +1797,7 @@ void solveNewtonStep(bool updatePreconditionerThisStep)
         computePreconditioner();
     }
 
-    if (nkCfg.useResidualSmoothing) {
+    if (activePhase.residualSmoothingIters > 0) {
         evalResidualSmoothing();
     	applyResidualSmoothing();
     }
@@ -1963,7 +1963,7 @@ void solveNewtonStepFGMRES()
 
     determineScaleFactors(rowScale, colScale, nkCfg.useScaling);
 
-    if (nkCfg.useResidualSmoothing) {
+    if (activePhase.residualSmoothingIters > 0) {
         evalResidualSmoothing();
     	applyResidualSmoothing();
     }
@@ -3841,7 +3841,7 @@ double applyLineSearch(double omega)
 	//----
 	// 3. Add smoothing source term
 	//----
-	if (nkCfg.useResidualSmoothing) {
+	if (activePhase.residualSmoothingIters > 0) {
             applyResidualSmoothing();
 	}
 
