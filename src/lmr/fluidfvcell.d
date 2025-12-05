@@ -1290,6 +1290,15 @@ public:
             Q[cqi.modes+cqi.n_modes-1] += udivpe;
             Q[cqi.totEnergy] += udivpe;
         } // end if ( myConfig.electric_field_work )
+
+        if (myConfig.joule_heating && myConfig.solve_electric_field) {
+            number joule_heating = fs.gas.sigma * (electric_field[0] * electric_field[0] +
+                                                   electric_field[1] * electric_field[1]);
+            if (myConfig.gmodel.n_modes > 0) {
+                Q[cqi.modes+cqi.n_modes-1] += joule_heating;
+            }
+            Q[cqi.totEnergy] += joule_heating;
+        }
         return;
     } // end add_viscous_source_vector()
 

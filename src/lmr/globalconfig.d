@@ -1202,6 +1202,7 @@ final class GlobalConfig {
     //
     shared static bool electric_field_work = false;
     shared static bool electron_pressure_convection_term = false;
+    shared static bool joule_heating = false;
     //
     // For Daryl Bond and Vince Wheatley's Single-fluid MHD additions.
     //
@@ -1508,6 +1509,7 @@ public:
     //
     bool radiation;
     bool electric_field_work;
+    bool joule_heating;
     bool electron_pressure_convection_term;
     bool MHD;
     bool MHD_static_field;
@@ -1700,6 +1702,7 @@ public:
         //
         radiation = cfg.radiation;
         electric_field_work = cfg.electric_field_work;
+        joule_heating = cfg.joule_heating;
         electron_pressure_convection_term = cfg.electron_pressure_convection_term;
         MHD = cfg.MHD;
         MHD_static_field = cfg.MHD_static_field;
@@ -2074,6 +2077,7 @@ void set_config_for_core(JSONValue jsonData)
     mixin(update_string("conductivity_model_name", "conductivity_model_name"));
 
     mixin(update_bool("electric_field_work", "electric_field_work"));
+    mixin(update_bool("joule_heating", "joule_heating"));
     mixin(update_bool("electron_pressure_convection_term", "electron_pressure_convection_term"));
 
     // Checking of constraints.
@@ -2167,6 +2171,7 @@ void set_config_for_core(JSONValue jsonData)
         writeln("  solve_electric_field: ", cfg.solve_electric_field);
         writeln("  conductivity_model_name: ", cfg.conductivity_model_name);
         writeln("  electric_field_work: ", cfg.electric_field_work);
+        writeln("  joule_heating: ", cfg.joule_heating);
         writeln("  electron_pressure_convection_term: ", cfg.electron_pressure_convection_term);
     }
     configCheckPoint2();

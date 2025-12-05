@@ -38,6 +38,7 @@ configOptionsHidden = { -- hidden from user
    solve_electric_field = false,
    conductivity_model_name="none",
    electric_field_work = false,
+   joule_heating = false,
    electron_pressure_convection_term = false,
    --
    strang_splitting = "full_T_full_R",

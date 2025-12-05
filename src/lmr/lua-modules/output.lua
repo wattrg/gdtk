@@ -185,6 +185,7 @@ function output.write_config_file(fileName)
    f:write(string.format('"electric_gmres_iters": %d,\n', config.electric_field_gmres_iters))
    f:write(string.format('"conductivity_model_name": "%s",\n', tostring(config.conductivity_model_name)))
    f:write(string.format('"electric_field_work": %s,\n', tostring(config.electric_field_work)))
+   f:write(string.format('"joule_heating": %s,\n', tostring(config.joule_heating)))
    f:write(string.format('"electron_pressure_convection_term": %s,\n', tostring(config.electron_pressure_convection_term)))
    f:write(string.format('"apply_bcs_in_parallel": %s,\n',
 			 tostring(config.apply_bcs_in_parallel)))
